@@ -15,8 +15,6 @@ contract BLT_NFT is IERC721, IERC721Receiver {
     mapping(uint256 => address) private _tokenApprovals;
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
-    mapping(uint => uint) public totalSupplyOfTokens;
-
     mapping(uint256 => string) private _tokenURIs;
 
     modifier onlyAdmin() {
@@ -28,6 +26,10 @@ contract BLT_NFT is IERC721, IERC721Receiver {
 
     constructor() {
         admin = msg.sender;
+
+        for (uint256 i = 0; i < 5; i++) {
+            mint(i);
+        }
     }
 
     function balanceOf(address owner) external view returns (uint256 balance_) {
@@ -95,7 +97,13 @@ contract BLT_NFT is IERC721, IERC721Receiver {
 
     // Approval
     function approve(address to, uint256 tokenId) external {
+        address owner = _ownerOfNft[tokenId];
+        require(owner != address(0), "Token does not exist");
         require(to != address(0), "Invalid address to grant approval to!");
+        require(
+            msg.sender == owner || _operatorApprovals[owner][msg.sender],
+            "Caller is not owner nor approved for all"
+        );
 
         _tokenApprovals[tokenId] = to;
 
@@ -118,6 +126,8 @@ contract BLT_NFT is IERC721, IERC721Receiver {
 
         emit Events.ApprovalForAll(msg.sender, operator, _approved);
     }
+
+    
     function isApprovedForAll(
         address owner,
         address operator
@@ -149,7 +159,9 @@ contract BLT_NFT is IERC721, IERC721Receiver {
     }
 
     function mint(uint256 tokenId) internal {
-        _balances[msg.sender] += 1;
-        _ownerOfNft[tokenId] = msg.sender;
+        _balances[address(this)] += 1;
+        _ownerOfNft[tokenId] = address(this);
+
+        emit Events.Transfer(address(0), address(this), tokenId);
     }
 }
